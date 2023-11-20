@@ -1,5 +1,5 @@
 ---
-title: "Capstone"
+title: "Google Professional Data Analytics Capstone"
 author: "Sai Vaibhav Polisetti Venkata"
 date: "2023-11-20"
 output: html_document
@@ -23,7 +23,6 @@ library(ggplot2)
 
 ## Including Plots
 
-You can also embed plots, for example:
 
 ```{r Data Cleaning, echo=FALSE}
 df <-
@@ -37,9 +36,13 @@ df$start_month <- month(ymd_hms(df$started_at))
 df$start_day <- weekdays(df$started_at)
 df$calendar_day <-day(ymd_hms(df$started_at))
 df$hours_day <-hour(ymd_hms(df$started_at))
+df$ride_length_sec <- as.numeric(as.difftime(df$ride_length, format = "%H:%M:%S"))
+df$ride_length_min <- minute(hms(df$ride_length))
+
+df$ride_length_hr <- df$ride_length_sec/(60*60)
+df$ride_length_day <- df$ride_length_sec/(60*60*24)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ```{r Data Cleaning Contd.,echo = FALSE}
 df<- df %>% select(-start_lat,-start_lng,-end_lat,-end_lng)
