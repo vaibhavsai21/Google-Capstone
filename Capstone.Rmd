@@ -1,0 +1,91 @@
+---
+title: "Capstone"
+author: "Sai Vaibhav Polisetti Venkata"
+date: "2023-11-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This project focuses on analyzing the Bike Shares for a Chicago based Company for Q1 of 2020. The data has been cleaned and ride lengths and ride counts have been calculated on a monthly, daily & hourly basis.
+
+```{r Load the Libraries, echo=FALSE}
+df <- read.csv("C:\\Users\\Vaibhav\\OneDrive\\Desktop\\Dataset\\CSVs\\Divvy_Trips_2020_Q1.csv",header=TRUE)
+library(dplyr)
+library(hms)
+library(lubridate)
+library(ggplot2)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r Data Cleaning, echo=FALSE}
+df <-
+  df %>% mutate(
+    started_at = as.POSIXct(started_at, format = "%Y-%m-%d %H:%M:%S"),
+    ended_at = as.POSIXct(ended_at, format = "%Y-%m-%d %H:%M:%S")
+  )
+
+df$ride_length <- as_hms(difftime(df$ended_at, df$started_at))
+df$start_month <- month(ymd_hms(df$started_at))
+df$start_day <- weekdays(df$started_at)
+df$calendar_day <-day(ymd_hms(df$started_at))
+df$hours_day <-hour(ymd_hms(df$started_at))
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r Data Cleaning Contd.,echo = FALSE}
+df<- df %>% select(-start_lat,-start_lng,-end_lat,-end_lng)
+df <- df[df$ride_length > 0, , drop = FALSE]
+df<-df %>% mutate(route=paste(start_station_name,end_station_name,sep = " to "))
+
+
+df2<-df %>% group_by(member_casual) %>% summarise(AVG=mean(ride_length)) %>% mutate(AVG_hms=as_hms(AVG))
+
+df2<-select(df2,-AVG)
+
+df3<-df %>% group_by(start_month) %>% summarise(AVG_month=mean(ride_length)) %>% mutate(AVG_month=as_hms(AVG_month))
+
+```
+
+```{r Data Cleaning Contd._2,echo=FALSE}
+df4<-df %>% group_by(start_day) %>% summarise(AVG_day=mean(ride_length)) %>% mutate(AVG_day=as_hms(AVG_day))
+
+desired_order <- c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")
+df4$start_day <- factor(df4$start_day, levels = desired_order)
+df5<- df %>% group_by(route) %>% summarise(route_counts=n())
+df5<-arrange(df5,desc(route_counts))
+```
+
+```{r Data Cleaning_3,echo=FALSE}
+df6<-df %>% group_by(calendar_day,member_casual) %>% summarise(ride_counts=n())
+df7<-df %>% group_by(hours_day,member_casual) %>% summarise(ride_counts=n())
+df8<-df %>% group_by(start_day,member_casual) %>% summarise(ride_counts=n())
+df8$start_day <- factor(df8$start_day, levels = desired_order)
+df9<-df %>% group_by(start_month,member_casual) %>% summarise(ride_counts=n()) %>%  mutate(
+    start_month = month.name[start_month]
+  )
+month_order <-c("January", "February","March")
+df9$start_month <- factor(df9$start_month,levels = month_order)
+```
+
+
+```{r Plots,echo=FALSE}
+ggplot(df4,aes(x=start_day,y=AVG_day)) + geom_bar(fill="skyblue",color="red",stat="identity")+labs(title="Average Ride Length each Day",x="Days",y="Ride Length")
+ggplot(df3,aes(x=start_month,y=AVG_month)) + geom_bar(fill="skyblue",color="red",stat="identity")+labs(title="Average Ride Length each Month",x="Month",y="Ride Length")
+ggplot(df2,aes(x=member_casual,y=AVG_hms)) + geom_bar(fill="skyblue",color="red",stat="identity")+labs(title="Average Ride Length vs Membership",x="Membership",y="Ride Length")
+ggplot(df5,aes(x=route,y=route_counts)) + geom_bar(fill="skyblue",color="red",stat="identity")+labs(title="Most Popular Routes",x="Routes",y="Route Counts")
+ggplot(df6,aes(x=calendar_day,y=ride_counts,fill=member_casual)) + geom_bar(color="black",stat="identity")+labs(title="Ride Counts in a Month for Memberships",x="Days",y="Ride Counts")
+ggplot(df7,aes(x=hours_day,y=ride_counts,fill=member_casual)) + geom_bar(color="black",stat="identity")+labs(title="Ride Count/Hr vs Memberships",x="Hours",y="Ride Counts")
+ggplot(df8,aes(x=start_day,y=ride_counts,fill=member_casual)) + geom_bar(color="black",stat="identity")+labs(title="Ride Counts on different Days",x="Days",y="Ride Counts")
+ggplot(df9,aes(x=start_month,y=ride_counts,fill=member_casual)) + geom_bar(color="black",stat="identity")+labs(title="Rides vs Months",x="Months",y="Ride Counts")
+
+```
+
